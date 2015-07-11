@@ -1,0 +1,144 @@
+# plot4
+# usage:
+#   source("plot4.R")
+#   plot4("data.csv", "plot4.png")
+
+plot4 <- function(datafile, pngfile) {
+
+    # to suggest the data structure , read head 100 line
+    sampling <- read.table(
+        datafile,
+        sep=";",
+        stringsAsFactor=FALSE,
+        header = TRUE,
+        nrows=100,
+        na.strings="?")
+
+    # suggest structure
+    classes <- sapply(sampling, class)
+
+    # read all
+    dfrm <- read.table(
+        datafile,
+        sep=";",
+        stringsAsFactor=FALSE,
+        header = TRUE,
+        colClasses=classes,
+        na.strings="?")
+
+    # subset Date is "1/2/2007" or "2/2/2007"
+    dfrm <- subset(
+        dfrm,
+        subset=(Date == "1/2/2007" | Date == "2/2/2007"))
+
+    # convert from datestring, timestring to datetime
+    date_frame <- as.data.frame(
+        strptime(
+            paste(dfrm$Date, dfrm$Time),
+            "%d/%m/%Y %H:%M:%S")
+        )
+    colnames(date_frame) <- c("Datetime")
+    dfrm <- cbind(dfrm,date_frame)
+
+    # create png file
+    png(pngfile, width = 480, height = 480)
+
+    # global parameter backup
+    oldmai = par("mai")
+    oldps = par("ps")
+    oldmar = par("mar")
+    oldlwd = par("lwd")
+    oldmfrow = par("mfrow")
+    oldfin = par("fin")
+    oldlocale = Sys.getlocale("LC_TIME")
+
+    # set locale(for multi locale)
+    Sys.setlocale("LC_TIME","en_US")
+
+    par(mai=c(0.8,0.8,0.4,0.4))
+    par(ps=12)
+    par(mar=c(4,4,5,2))
+    par(lwd=1)
+    par(fin=c(5,3))
+
+    par(mfrow=c(2,2))
+
+    # No.1
+    plot(
+        dfrm$Datetime,
+        dfrm$Global_active_power,
+        type="l",
+        ylab="Global Active Power",
+        xlab="")
+
+    # No.2
+    plot(
+        dfrm$Datetime,
+        dfrm$Voltage,
+        type="l",
+        ylab="Voltage",
+        xlab="datetime")
+
+    # No.3
+    plot_col <- c("black","red","blue")
+    ylimmax <- max(dfrm$Sub_metering_1)
+    plot(
+        dfrm$Datetime,
+        dfrm$Sub_metering_1,
+        type="l",
+        ann=F,
+        axes=F,
+        col=plot_col[1],
+        ylim=c(0,ylimmax))
+    par(new=T)
+    plot(
+        dfrm$Datetime,
+        dfrm$Sub_metering_2,
+        type="l",
+        ann=F,
+        axes=F,
+        col=plot_col[2],
+        ylim=c(0,ylimmax))
+    par(new=T)
+    plot(
+        dfrm$Datetime,
+        dfrm$Sub_metering_3,
+        type="l",
+        col=plot_col[3],
+        ylim=c(0,ylimmax),
+        ylab="Energy sub metering",
+        xlab="")
+    legend(
+        "topright",
+        legend=c(
+            "Sub_metering_1",
+            "Sub_metering_2",
+            "Sub_metering_3"),
+        col=plot_col,
+        lty=c(rep("solid",3)),
+        bty="n",
+        cex=1)
+
+    # No.4
+    plot(
+        dfrm$Datetime,
+        dfrm$Global_reactive_power,
+        type="l",
+        ylab="Global_reactive_power",
+        xlab="datetime")
+
+    # global parameter restore
+    par(mai=oldmai)
+    par(ps=oldps)
+    par(mar=oldmar)
+    par(lwd=oldlwd)
+    par(fin=oldfin)
+    par(mfrow=oldmfrow)
+
+    Sys.setlocale("LC_TIME",oldlocale)
+
+    # png file close
+    dev.off()
+
+    TRUE
+}
